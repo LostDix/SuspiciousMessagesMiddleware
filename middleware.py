@@ -82,24 +82,24 @@ class SuspiciousMessagesMiddleware(BaseMiddleware):
 
     def _is_suspicious(self, text: str) -> bool:
         """Определяет подозрительные сообщения"""
-        # Цифры среди букв
-        if re.search(r'\w*\d+\w*', text):
+        # Цифры среди букв в слове (например "пр4вет")
+        if re.search(r'\b\w+\d+\w+\b', text):
             return True
 
-        # Повторяющиеся символы
+        # Повторяющиеся символы (более 3 подряд)
         if any(len(list(g)) > 3 for _, g in groupby(text.lower())):
             return True
 
-        # Слова в котором буквы разделены пробелом (п р и в е т)
+        # Слова с разделёнными пробелом буквами (п р и в е т)
         if re.search(r'(?:^|\s)([а-яa-z]\s){2,}[а-яa-z](?:$|\s)', text.lower()):
             return True
 
-        # Предложения без пробелов вообще (но длиннее 3 символов)
+        # Предложения без пробелов (длиннее 3 символов)
         if len(text) > 3 and ' ' not in text:
             return True
 
         # Спецсимволы внутри слов
-        if re.search(r'\w+[^\w\s]\w+', text):
+        if re.search(r'\b\w+[^\w\s]\w+\b', text):
             return True
 
         return False

@@ -81,25 +81,33 @@ class SuspiciousMessagesMiddleware(BaseMiddleware):
         return False
 
     def _is_suspicious(self, text: str) -> bool:
-        """Определяет подозрительные сообщения"""
-        # Цифры среди букв в слове (например "пр4вет")
-        if re.search(r'\b\w+\d+\w+\b', text):
+        if not text:
+            return False
+
+        text_lower = text.lower().strip()
+
+        # Игнорируем очень короткие сообщения
+        if len(text_lower) <= 4:
+            return False
+
+        # 1. Цифры внутри слов ("пр4вет")
+        if re.search(r"[а-яa-z]+\d+[а-яa-z]+", text_lower):
             return True
 
-        # Повторяющиеся символы (более 3 подряд)
-        if any(len(list(g)) > 3 for _, g in groupby(text.lower())):
+        # 2. Повтор символов (но разрешаем "аааа!", "нооо...")
+        if any(len(list(g)) > 3 for k, g in groupby(text_lower) if k.isalpha()):
             return True
 
-        # Слова с разделёнными пробелом буквами (п р и в е т)
-        if re.search(r'(?:^|\s)([а-яa-z]\s){2,}[а-яa-z](?:$|\s)', text.lower()):
+        # 3. Слишком много пробелов между буквами ("п р и в е т")
+        if re.search(r"(?:^|\s)([а-яa-z]\s){3,}[а-яa-z](?:$|\s)", text_lower):
             return True
 
-        # Предложения без пробелов (длиннее 3 символов)
-        if len(text) > 3 and ' ' not in text:
+        # 4. Длинные слитные строки (>10 символов без пробелов)
+        if len(text_lower) > 10 and " " not in text_lower:
             return True
 
-        # Спецсимволы внутри слов
-        if re.search(r'\b\w+[^\w\s]\w+\b', text):
+        # 5. Спецсимволы внутри слов (но разрешаем дефисы и апострофы)
+        if re.search(r"[а-яa-z]+[^\w\s'-]+[а-яa-z]+", text_lower):
             return True
 
         return False
